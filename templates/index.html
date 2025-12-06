@@ -168,7 +168,7 @@
         <div id="result" class="result">
             <h3>✅ 链接生成成功！</h3>
             <div class="url-box" id="urlBox"></div>
-            <button class="copy-btn" onclick="copyUrl()">📋 复制链接</button>
+            <button class="copy-btn" onclick="copyUrl(event)">📋 复制链接</button>
             <p class="note">⚠️ 此链接只能打开一次，请谨慎分享！</p>
         </div>
 
@@ -233,7 +233,7 @@
             document.getElementById('error').style.display = 'block';
         }
 
-        function copyUrl() {
+        function copyUrl(event) {
             navigator.clipboard.writeText(generatedUrl).then(() => {
                 const btn = event.target;
                 const originalText = btn.textContent;
