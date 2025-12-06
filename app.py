@@ -139,5 +139,13 @@ def stats():
 
 
 if __name__ == '__main__':
-    # 开发模式
-    app.run(host='0.0.0.0', port=8080, debug=True)
+    # 生产模式：单进程运行
+    # 重要：必须使用单进程，因为数据存储在内存中
+    # 如果需要多进程，请改用 Redis 等共享存储
+    app.run(
+        host='0.0.0.0',
+        port=8080,
+        debug=False,  # 生产环境关闭 debug
+        threaded=True,  # 支持多线程处理并发请求
+        processes=1  # 强制单进程
+    )

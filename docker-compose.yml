@@ -5,7 +5,7 @@ services:
     build: .
     container_name: burntext-app
     ports:
-      - "8080:5000"
+      - "48080:5000"
     restart: unless-stopped
     environment:
       - FLASK_ENV=production

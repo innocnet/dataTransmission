@@ -38,13 +38,21 @@ docker run -d -p 5000:5000 --name burntext burntext
 
 ### 方式 3：生产环境部署
 
-```bash
-# 安装 gunicorn
-pip install gunicorn
+**重要：由于使用内存存储，必须以单进程模式运行**
 
-# 启动生产服务器
-gunicorn --bind 0.0.0.0:5000 --workers 4 app:app
+```bash
+# 方式 A：直接使用 Python 运行（推荐）
+python app.py
+
+# 方式 B：使用 gunicorn（必须设置 workers=1）
+pip install gunicorn
+gunicorn --bind 0.0.0.0:8080 --workers 1 --threads 4 app:app
 ```
+
+⚠️ **警告**：
+- 必须使用 `--workers 1`（单进程）
+- 如果需要多进程提升性能，必须改用 Redis 等共享存储
+- 多进程会导致数据在不同进程间不同步，造成"第一次404，第二次才能访问"的问题
 
 ## 使用方法
 
