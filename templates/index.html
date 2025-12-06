@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阅后即焚 - 一次性文本分享</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 700px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #856404;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .result {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .result h3 {
+            color: #155724;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .result.error h3 {
+            color: #721c24;
+        }
+
+        .url-box {
+            background: white;
+            padding: 12px;
+            border-radius: 4px;
+            margin-top: 10px;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            border: 1px solid #28a745;
+        }
+
+        .copy-btn {
+            margin-top: 10px;
+            width: auto;
+            padding: 8px 20px;
+            background: #28a745;
+            font-size: 14px;
+        }
+
+        .copy-btn:hover {
+            background: #218838;
+        }
+
+        .note {
+            margin-top: 10px;
+            color: #856404;
+            font-size: 13px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 阅后即焚</h1>
+        <p class="subtitle">创建一次性文本链接，打开后立即销毁</p>
+
+        <div class="warning">
+            ⚠️ <strong>重要提示：</strong>生成的链接只能访问一次！打开后内容会立即销毁，无法再次查看。
+        </div>
+
+        <textarea id="textInput" placeholder="在这里粘贴你的文本内容...&#10;&#10;注意：&#10;- 链接只能访问一次&#10;- 24小时后自动过期&#10;- 请勿分享敏感信息"></textarea>
+
+        <button id="submitBtn" onclick="createLink()">生成一次性链接</button>
+
+        <div id="result" class="result">
+            <h3>✅ 链接生成成功！</h3>
+            <div class="url-box" id="urlBox"></div>
+            <button class="copy-btn" onclick="copyUrl()">📋 复制链接</button>
+            <p class="note">⚠️ 此链接只能打开一次，请谨慎分享！</p>
+        </div>
+
+        <div id="error" class="result error" style="display: none;">
+            <h3>❌ 出错了</h3>
+            <p id="errorMsg"></p>
+        </div>
+    </div>
+
+    <script>
+        let generatedUrl = '';
+
+        async function createLink() {
+            const text = document.getElementById('textInput').value;
+            const submitBtn = document.getElementById('submitBtn');
+            const resultDiv = document.getElementById('result');
+            const errorDiv = document.getElementById('error');
+
+            // 隐藏之前的结果
+            resultDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+
+            if (!text.trim()) {
+                showError('请输入文本内容');
+                return;
+            }
+
+            // 禁用按钮
+            submitBtn.disabled = true;
+            submitBtn.textContent = '生成中...';
+
+            try {
+                const response = await fetch('/api/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    generatedUrl = data.url;
+                    document.getElementById('urlBox').textContent = data.url;
+                    resultDiv.style.display = 'block';
+                    // 清空输入框
+                    document.getElementById('textInput').value = '';
+                } else {
+                    showError(data.error || '生成链接失败');
+                }
+            } catch (error) {
+                showError('网络错误：' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '生成一次性链接';
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('errorMsg').textContent = message;
+            document.getElementById('error').style.display = 'block';
+        }
+
+        function copyUrl() {
+            navigator.clipboard.writeText(generatedUrl).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ 已复制！';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                alert('复制失败，请手动复制：' + generatedUrl);
+            });
+        }
+
+        // 回车键提交
+        document.getElementById('textInput').addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                createLink();
+            }
+        });
+    </script>
+</body>
+</html>

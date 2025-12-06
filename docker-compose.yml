@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  burntext:
+    build: .
+    container_name: burntext-app
+    ports:
+      - "8080:5000"
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=production
+    # 如果需要持久化，可以挂载 volume
+    # volumes:
+    #   - ./data:/app/data

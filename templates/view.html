@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>查看文本 - 阅后即焚</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #856404;
+            font-weight: 600;
+        }
+
+        .text-content {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 200px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .copy-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .copy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .home-btn {
+            background: #6c757d;
+            color: white;
+        }
+
+        .home-btn:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e7f3ff;
+            border-left: 4px solid #2196f3;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #014361;
+        }
+
+        .destroyed {
+            color: #dc3545;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 文本内容</h1>
+        <p class="subtitle">这是一次性内容，页面关闭后无法再次访问</p>
+
+        <div class="warning">
+            ⚠️ <strong>重要：</strong>此内容已被读取，链接已失效！刷新或关闭页面后将无法再次查看。
+        </div>
+
+        <div class="text-content" id="textContent">{{ text }}</div>
+
+        <div class="actions">
+            <button class="copy-btn" onclick="copyText()">📋 复制文本</button>
+            <button class="home-btn" onclick="goHome()">🏠 创建新链接</button>
+        </div>
+
+        <div class="info">
+            💡 <strong>提示：</strong>建议立即复制内容。关闭页面后，<span class="destroyed">此内容已从服务器永久删除</span>，无法恢复。
+        </div>
+    </div>
+
+    <script>
+        function copyText() {
+            const text = document.getElementById('textContent').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ 已复制！';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                // 降级方案：选中文本
+                const textElement = document.getElementById('textContent');
+                const range = document.createRange();
+                range.selectNodeContents(textElement);
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+                alert('请使用 Ctrl+C (或 Cmd+C) 复制选中的文本');
+            });
+        }
+
+        function goHome() {
+            window.location.href = '/';
+        }
+
+        // 阻止意外刷新
+        window.addEventListener('beforeunload', (e) => {
+            e.preventDefault();
+            e.returnValue = '内容已被读取，刷新后将无法再次查看！';
+        });
+    </script>
+</body>
+</html>
