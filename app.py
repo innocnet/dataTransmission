@@ -4,12 +4,30 @@
 用户粘贴文本后生成唯一URL，打开一次后自动销毁
 """
 from flask import Flask, render_template, request, jsonify, abort, Response
+from werkzeug.middleware.proxy_fix import ProxyFix
 import secrets
 import string
 from datetime import datetime, timedelta
 from threading import Lock
+import logging
 
 app = Flask(__name__)
+
+# 配置代理支持（用于 nginx 反向代理）
+app.wsgi_app = ProxyFix(
+    app.wsgi_app,
+    x_for=1,  # X-Forwarded-For
+    x_proto=1,  # X-Forwarded-Proto
+    x_host=1,  # X-Forwarded-Host
+    x_prefix=1  # X-Forwarded-Prefix
+)
+
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # 内存存储（简单场景，重启后数据丢失）
 # 如果需要持久化，可以改用 SQLite 或 Redis
@@ -80,6 +98,7 @@ def create_text():
 
     # 返回访问 URL
     url = request.host_url + 'view/' + text_id
+    logger.info(f"创建文本 ID: {text_id}, URL: {url}, 来源IP: {request.remote_addr}")
     return jsonify({
         'success': True,
         'url': url,
@@ -90,14 +109,21 @@ def create_text():
 @app.route('/view/<text_id>')
 def view_text(text_id):
     """查看文本（只能查看一次）"""
+    user_agent = request.headers.get('User-Agent', 'Unknown')
+    ip = request.remote_addr
+
+    logger.info(f"访问请求 ID: {text_id}, IP: {ip}, User-Agent: {user_agent}")
+
     cleanup_expired()
 
     # 获取并删除文本（一次性）
     with texts_lock:
         if text_id not in texts:
+            logger.warning(f"文本不存在或已被删除 ID: {text_id}, IP: {ip}")
             abort(404)
 
         text_data = texts.pop(text_id)  # 取出并删除
+        logger.info(f"文本已读取并删除 ID: {text_id}, IP: {ip}")
 
     # 返回纯文本，方便直接复制
     return Response(text_data['text'], mimetype='text/plain; charset=utf-8')
