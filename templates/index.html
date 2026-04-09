@@ -234,16 +234,34 @@
         }
 
         function copyUrl(event) {
-            navigator.clipboard.writeText(generatedUrl).then(() => {
-                const btn = event.target;
-                const originalText = btn.textContent;
+            const btn = event.target;
+            const originalText = btn.textContent;
+            const onSuccess = () => {
                 btn.textContent = '✅ 已复制！';
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                }, 2000);
-            }).catch(err => {
+                setTimeout(() => { btn.textContent = originalText; }, 2000);
+            };
+            const onFail = () => {
                 alert('复制失败，请手动复制：' + generatedUrl);
-            });
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(generatedUrl).then(onSuccess).catch(onFail);
+            } else {
+                const textarea = document.createElement('textarea');
+                textarea.value = generatedUrl;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+                try {
+                    document.execCommand('copy') ? onSuccess() : onFail();
+                } catch (e) {
+                    onFail();
+                } finally {
+                    document.body.removeChild(textarea);
+                }
+            }
         }
 
         // 回车键提交

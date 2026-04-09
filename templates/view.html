@@ -149,15 +149,13 @@
     <script>
         function copyText() {
             const text = document.getElementById('textContent').textContent;
-            navigator.clipboard.writeText(text).then(() => {
-                const btn = event.target;
-                const originalText = btn.textContent;
+            const btn = event.target;
+            const originalText = btn.textContent;
+            const onSuccess = () => {
                 btn.textContent = '✅ 已复制！';
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                }, 2000);
-            }).catch(err => {
-                // 降级方案：选中文本
+                setTimeout(() => { btn.textContent = originalText; }, 2000);
+            };
+            const onFail = () => {
                 const textElement = document.getElementById('textContent');
                 const range = document.createRange();
                 range.selectNodeContents(textElement);
@@ -165,7 +163,26 @@
                 selection.removeAllRanges();
                 selection.addRange(range);
                 alert('请使用 Ctrl+C (或 Cmd+C) 复制选中的文本');
-            });
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(onSuccess).catch(onFail);
+            } else {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+                try {
+                    document.execCommand('copy') ? onSuccess() : onFail();
+                } catch (e) {
+                    onFail();
+                } finally {
+                    document.body.removeChild(textarea);
+                }
+            }
         }
 
         function goHome() {
