@@ -29,6 +29,32 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# 固定 key → 内容映射，永不销毁
+FIXED_TEXTS = {
+    'nasproxy': """port: 7890
+socks-port: 7891
+allow-lan: true
+mode: Direct
+log-level: info
+proxies:
+  - name: nas
+    type: http
+    server: 192.168.192.31
+    port: 7890
+    tls: false
+    skip-cert-verify: true
+
+proxy-groups:
+  - name: 🚀 节点选择
+    type: select
+    proxies:
+      - nas
+      - DIRECT
+
+rules:
+  - MATCH, nas"""
+}
+
 # 内存存储（简单场景，重启后数据丢失）
 # 如果需要持久化，可以改用 SQLite 或 Redis
 texts = {}
@@ -114,6 +140,10 @@ def view_text(text_id):
 
     logger.info(f"访问请求 ID: {text_id}, IP: {ip}, User-Agent: {user_agent}")
 
+    # 固定 key，永久返回，不销毁
+    if text_id in FIXED_TEXTS:
+        return Response(FIXED_TEXTS[text_id], mimetype='text/plain; charset=utf-8')
+
     cleanup_expired()
 
     # 获取并删除文本（一次性）
@@ -127,6 +157,7 @@ def view_text(text_id):
 
     # 返回纯文本，方便直接复制
     return Response(text_data['text'], mimetype='text/plain; charset=utf-8')
+
 
 
 @app.route('/api/stats')
